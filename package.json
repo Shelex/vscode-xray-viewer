@@ -2,7 +2,7 @@
   "name": "vscode-xray-viewer",
   "displayName": "vscode-xray-viewer",
   "description": "view xray test cases",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "engines": {
     "vscode": "^1.98.0"
   },

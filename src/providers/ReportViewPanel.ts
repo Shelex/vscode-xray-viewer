@@ -1,3 +1,4 @@
+import path from "node:path";
 import * as vscode from "vscode";
 import { JiraTestCase, ticketStorage } from "../jira/storage";
 import { Coverage, getCoveredTestCases } from "../fs/covered";
@@ -8,6 +9,7 @@ export function getWebviewOptions(
 ): vscode.WebviewOptions {
     return {
         enableScripts: true,
+        enableCommandUris: true,
         localResourceRoots: [vscode.Uri.joinPath(extensionUri, "media")],
     };
 }
@@ -70,11 +72,35 @@ export class CoverageReportPanel {
         );
 
         this._panel.webview.onDidReceiveMessage(
-            (message) => {
-                switch (message.command) {
-                    case "alert":
-                        vscode.window.showErrorMessage(message.text);
-                        return;
+            async (message) => {
+                if (message.command === "alert") {
+                    vscode.window.showErrorMessage(message.text);
+                    return;
+                }
+
+                if (message.command === "openFile") {
+                    const cwd =
+                        vscode.workspace.workspaceFolders?.at(0)?.uri.fsPath ??
+                        "";
+                    const uri = vscode.Uri.parse(
+                        path.join(cwd, message.filePath)
+                    );
+                    const document = await vscode.workspace.openTextDocument(
+                        uri
+                    );
+                    const editor = await vscode.window.showTextDocument(
+                        document,
+                        {
+                            preview: false,
+                        }
+                    );
+                    const position = new vscode.Position(message.line - 1, 0);
+                    const selection = new vscode.Selection(position, position);
+                    editor.selection = selection;
+                    editor.revealRange(
+                        new vscode.Range(position, position),
+                        vscode.TextEditorRevealType.InCenter
+                    );
                 }
             },
             null,
@@ -132,6 +158,10 @@ export class CoverageReportPanel {
                         font-size: 20px;
                     }
 
+                    th, td {
+                        border: 1px solid #7d7d7d;
+                    }
+
                     .panel-header {
                         background-color: #ccc;
                         color: #444;
@@ -156,6 +186,12 @@ export class CoverageReportPanel {
                         overflow: hidden;
                     }
                 </style>
+                <script>
+                    function openFile(filePath, line) {
+                        const vscode = acquireVsCodeApi();
+                        vscode.postMessage({ command: 'openFile', filePath, line });
+                    }
+                </script>
                 </head><body>`;
         const ending = `</body></html>`;
 
@@ -175,7 +211,13 @@ export class CoverageReportPanel {
                 <th>covered</th>
             </thead>
         <tbody>`;
-        const allEpics = testCases.map(testCase => testCase.summary.split('[').pop()?.split(']')?.shift() ?? '').filter(Boolean).map(t => t.trim());
+        const allEpics = testCases
+            .map(
+                (testCase) =>
+                    testCase.summary.split("[").pop()?.split("]")?.shift() ?? ""
+            )
+            .filter(Boolean)
+            .map((t) => t.trim());
         const epics = Array.from(new Set(allEpics));
 
         const coverage = (testCase: JiraTestCase) =>
@@ -183,40 +225,53 @@ export class CoverageReportPanel {
                 .filter(
                     (c) => `${cfg.atlassian.project}-${c.id}` === testCase.key
                 )
-                .map(() => `&#127774;`);
-
+                .map((t) => {
+                    return `<li><a href="#" style="font-size:12px" onclick="openFile('${t.file}', ${t.line})">${t.file}#${t.line}</a></li>`;
+                });
 
         const overallCoverage = `<h1>Overall Test Coverage ${percentage}%</h1>`;
-        const withEpics = epics.map(epic => {
-            const tc = testCases.filter(tc => tc.summary.includes(epic));
-            const coveredTestCases = tc.filter((tc) =>
-                covered.find((c) => `${cfg.atlassian.project}-${c.id}` === tc.key)
-            );
-            const epicPercentage = Math.round(
-                (coveredTestCases.length / tc.length) * 100
-            );
+        const withEpics = epics
+            .map((epic) => {
+                const tc = testCases.filter((tc) => tc.summary.includes(epic));
+                const coveredTestCases = tc.filter((tc) =>
+                    covered.find(
+                        (c) => `${cfg.atlassian.project}-${c.id}` === tc.key
+                    )
+                );
+                const epicPercentage = Math.round(
+                    (coveredTestCases.length / tc.length) * 100
+                );
 
-            return `
+                return `
             <button class="panel-header">${epic} [${epicPercentage}%]</button>
             <table class="panel" style="margin-bottom:5%">
             <thead>
-                <th style="width:15%">ID</th>
+                <th style="width:10%">ID</th>
                 <th>Test Case</th>
-                <th style="width:8%">Coverage</th>
+                <th style="width:20%">Coverage</th>
             </thead>
             <tbody>
-                ${tc.map(testCase => {
-                    return `
+                ${tc
+                    .map((testCase) => {
+                        return `
                     <tr>
-                        <td><a href=${cfg.atlassian.domain}/browse/${testCase.key}>${testCase.key}</a></td>
-                        <td>${testCase.summary.split(']').pop()?.trim()}</td>
-                        <td>${coverage(testCase).length ? coverage(testCase) : "-"}</td>
+                        <td><a href=${cfg.atlassian.domain}/browse/${
+                            testCase.key
+                        }>${testCase.key}</a></td>
+                        <td>${testCase.summary.split("]").pop()?.trim()}</td>
+                        <td>${
+                            coverage(testCase).length
+                                ? `<ul>${coverage(testCase).join("")}</ul>`
+                                : "-"
+                        }</td>
                     </tr>`;
-                }).join('')}
+                    })
+                    .join("")}
             </tbody>
             </table>
             `;
-        }).join("");
+            })
+            .join("");
 
         const rows = testCases
             .map(
@@ -226,14 +281,19 @@ export class CoverageReportPanel {
                     testCase.key
                 }</a></td>
         <td>${testCase.summary}</td>
-        <td>${coverage(testCase).length ? coverage(testCase) : "-"}</td>
+        <td>${
+            coverage(testCase).length
+                ? `<ul>${coverage(testCase).join("")}</ul>`
+                : "-"
+        }</td>
         </tr>`
             )
             .join("");
 
-        const body = cfg.atlassian.shouldGroupByEpic ? `${overallCoverage}${withEpics}` : `${tableHeader}${rows}</tbody></table>`;
+        const body = cfg.atlassian.shouldGroupByEpic
+            ? `${overallCoverage}${withEpics}`
+            : `${tableHeader}${rows}</tbody></table>`;
 
         return `${header}${body}${ending}`;
     }
 }
- 
