@@ -122,17 +122,41 @@ export class CoverageReportPanel {
     ) {
         const cfg = config();
         const header = `<!DOCTYPE html>
-			<html lang="en">
-			<head>
-				<meta charset="UTF-8">
-				<meta name="viewport" content="width=device-width, initial-scale=1.0">
-				<title>Test Coverage</title>
+   <html lang="en">
+   <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Coverage</title>
                 <style>
                     body {
                         font-size: 20px;
                     }
+
+                    .panel-header {
+                        background-color: #ccc;
+                        color: #444;
+                        cursor: pointer;
+                        padding: 18px;
+                        width: 100%;
+                        border: none;
+                        text-align: left;
+                        outline: none;
+                        font-size: 15px;
+                        transition: 0.4s;
+                    }
+
+                    .active, .panel-header:hover {
+                        background-color: #7d7d7d; 
+                    }
+
+                    .panel {
+                        margin: 2% 0;
+                        padding: 0 18px;
+                        width: 100%;
+                        overflow: hidden;
+                    }
                 </style>
-			</head><body>`;
+                </head><body>`;
         const ending = `</body></html>`;
 
         const coveredTestCases = testCases.filter((tc) =>
@@ -141,11 +165,18 @@ export class CoverageReportPanel {
         const percentage = Math.round(
             (coveredTestCases.length / testCases.length) * 100
         );
-        const tableHeader = `<h1>Test Coverage ${percentage}%</h1><table><thead>
-        <th>ID</th>
-        <th>test case</th>
-        <th>covered</th>
-        </thead><tbody>`;
+
+        const tableHeader = `
+        <h1>Overall Test Coverage ${percentage}%</h1>
+        <table>
+            <thead>
+                <th>ID</th>
+                <th>test case</th>
+                <th>covered</th>
+            </thead>
+        <tbody>`;
+        const allEpics = testCases.map(testCase => testCase.summary.split('[').pop()?.split(']')?.shift() ?? '').filter(Boolean).map(t => t.trim());
+        const epics = Array.from(new Set(allEpics));
 
         const coverage = (testCase: JiraTestCase) =>
             covered
@@ -153,6 +184,39 @@ export class CoverageReportPanel {
                     (c) => `${cfg.atlassian.project}-${c.id}` === testCase.key
                 )
                 .map(() => `&#127774;`);
+
+
+        const overallCoverage = `<h1>Overall Test Coverage ${percentage}%</h1>`;
+        const withEpics = epics.map(epic => {
+            const tc = testCases.filter(tc => tc.summary.includes(epic));
+            const coveredTestCases = tc.filter((tc) =>
+                covered.find((c) => `${cfg.atlassian.project}-${c.id}` === tc.key)
+            );
+            const epicPercentage = Math.round(
+                (coveredTestCases.length / tc.length) * 100
+            );
+
+            return `
+            <button class="panel-header">${epic} [${epicPercentage}%]</button>
+            <table class="panel" style="margin-bottom:5%">
+            <thead>
+                <th style="width:15%">ID</th>
+                <th>Test Case</th>
+                <th style="width:8%">Coverage</th>
+            </thead>
+            <tbody>
+                ${tc.map(testCase => {
+                    return `
+                    <tr>
+                        <td><a href=${cfg.atlassian.domain}/browse/${testCase.key}>${testCase.key}</a></td>
+                        <td>${testCase.summary.split(']').pop()?.trim()}</td>
+                        <td>${coverage(testCase).length ? coverage(testCase) : "-"}</td>
+                    </tr>`;
+                }).join('')}
+            </tbody>
+            </table>
+            `;
+        }).join("");
 
         const rows = testCases
             .map(
@@ -167,8 +231,9 @@ export class CoverageReportPanel {
             )
             .join("");
 
-        const body = `${tableHeader}${rows}</tbody></table>`;
+        const body = cfg.atlassian.shouldGroupByEpic ? `${overallCoverage}${withEpics}` : `${tableHeader}${rows}</tbody></table>`;
 
         return `${header}${body}${ending}`;
     }
 }
+ 
