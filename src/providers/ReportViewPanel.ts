@@ -234,7 +234,7 @@ export class CoverageReportPanel {
         const overallCoverage = `<h1>Overall Test Coverage ${percentage}%</h1>`;
         const withEpics = epics
             .map((epic) => {
-                const tc = testCases.filter((tc) => tc.summary.includes(`[${epic}]`));
+                const tc = getTestsPerEpic(testCases, epic);
                 const coveredTestCases = tc.filter((tc) =>
                     covered.find(
                         (c) => `${cfg.atlassian.project}-${c.id}` === tc.key
@@ -299,3 +299,13 @@ export class CoverageReportPanel {
         return `${header}${body}${ending}`;
     }
 }
+
+
+const treatSpecialCharactersAsSymbols = (string: string) => string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+//assuming test case name has `[epicName]` in title
+const getTestsPerEpic = (testCases: JiraTestCase[], epicName: string) => {
+  const escapedEpicName = treatSpecialCharactersAsSymbols(epicName);
+  const pattern = new RegExp(`^\\s*\\[\\s*${escapedEpicName}\\s*\\]`);
+  return testCases.filter(test => pattern.test(test.summary));
+};
