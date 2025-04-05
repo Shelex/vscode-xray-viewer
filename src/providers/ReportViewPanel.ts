@@ -196,7 +196,7 @@ export class CoverageReportPanel {
         const ending = `</body></html>`;
 
         const coveredTestCases = testCases.filter((tc) =>
-            covered.find((c) => `${cfg.atlassian.project}-${c.id}` === tc.key)
+            covered.some((c) => `${cfg.atlassian.project}-${c.id}` === tc.key)
         );
         const percentage = Math.round(
             (coveredTestCases.length / testCases.length) * 100
@@ -213,8 +213,10 @@ export class CoverageReportPanel {
         <tbody>`;
         const allEpics = testCases
             .map(
-                (testCase) =>
-                    testCase.summary.split("[").pop()?.split("]")?.shift() ?? ""
+                (testCase) => {
+                    const matches = testCase.summary.match(/\[(.*?)\]/);
+                    return matches?.at(1) ?? "";
+                }
             )
             .filter(Boolean)
             .map((t) => t.trim());
@@ -232,7 +234,7 @@ export class CoverageReportPanel {
         const overallCoverage = `<h1>Overall Test Coverage ${percentage}%</h1>`;
         const withEpics = epics
             .map((epic) => {
-                const tc = testCases.filter((tc) => tc.summary.includes(epic));
+                const tc = testCases.filter((tc) => tc.summary.includes(`[${epic}]`));
                 const coveredTestCases = tc.filter((tc) =>
                     covered.find(
                         (c) => `${cfg.atlassian.project}-${c.id}` === tc.key
