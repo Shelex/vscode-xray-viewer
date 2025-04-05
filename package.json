@@ -2,7 +2,7 @@
   "name": "vscode-xray-viewer",
   "displayName": "vscode-xray-viewer",
   "description": "view xray test cases",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "engines": {
     "vscode": "^1.98.0"
   },
@@ -27,11 +27,11 @@
     "commands": [
       {
         "command": "vscode-xray-viewer.generateCoverageReport",
-        "title": "Generate Test Coverage Report"
+        "title": "Xray-Viewer: Generate Test Coverage Report"
       },
       {
         "command": "vscode-xray-viewer.fetchTestCases",
-        "title": "Get Latest Test Cases from Jira API and save to file"
+        "title": "Xray-Viewer: Fetch latest Test Cases from Jira API"
       }
     ],
     "menus": {

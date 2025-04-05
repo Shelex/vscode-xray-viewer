@@ -8,6 +8,12 @@ Will not work for you if:
 -   you have some other ways of linking tests with xray id rather than `someMethod("id")` or `someMethod("url")`
 -   you do not have atlassian credentials (username and api key)
 
+## Features
+- command `Xray-Viewer: Fetch latest Test Cases from Jira API` to refresh the test cases state
+- command `Xray-Viewer: Generate Test Coverage Report` - calculate coverage percentage by matching test cases with `someMethod` usage that links automated test
+- provider to autocomplete `someMethod` with test case id
+- provider that shows full xray url on hover
+
 ## Configuration
 
 Example of `.vscode/settings.json`:
