@@ -145,23 +145,24 @@ export class CoverageReportPanel {
         <th>ID</th>
         <th>test case</th>
         <th>covered</th>
-        <th>url</th>
         </thead><tbody>`;
+
+        const coverage = (testCase: JiraTestCase) =>
+            covered
+                .filter(
+                    (c) => `${cfg.atlassian.project}-${c.id}` === testCase.key
+                )
+                .map(() => `&#127774;`);
 
         const rows = testCases
             .map(
                 (testCase) => `
         <tr>
-        <td>${testCase.key}</td>
+        <td><a href=${cfg.atlassian.domain}/browse/${testCase.key}>${
+                    testCase.key
+                }</a></td>
         <td>${testCase.summary}</td>
-        <td>${
-            covered.filter(
-                (c) => `${cfg.atlassian.project}-${c.id}` === testCase.key
-            ).length
-                ? `&#127774;`
-                : "n/a"
-        }</td>
-        <td><a href=${cfg.atlassian.domain}/browse/${testCase.key}>open</a></td>
+        <td>${coverage(testCase).length ? coverage(testCase) : "-"}</td>
         </tr>`
             )
             .join("");
