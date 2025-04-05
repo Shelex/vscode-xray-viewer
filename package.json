@@ -1,0 +1,166 @@
+{
+  "name": "vscode-xray-viewer",
+  "displayName": "vscode-xray-viewer",
+  "description": "view xray test cases",
+  "version": "0.0.1",
+  "engines": {
+    "vscode": "^1.98.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Shelex/vscode-xray-viewer.git"
+  },
+  "author": {
+    "name": "Oleksandr Shevtsov",
+    "email": "ovr.shevtsov@gmail.com"
+  },
+  "main": "./dist/extension.js",
+  "publisher": "shevtsov",
+  "activationEvents": [
+    "onLanguage:javascript",
+    "onLanguage:typescript"
+  ],
+  "contributes": {
+    "commands": [
+      {
+        "command": "vscode-xray-viewer.helloWorld",
+        "title": "Hello World"
+      },
+      {
+        "command": "vscode-xray-viewer.generateCoverageReport",
+        "title": "Generate Test Coverage Report"
+      },
+      {
+        "command": "vscode-xray-viewer.fetchTestCases",
+        "title": "Get Latest Test Cases from Jira API and save to file"
+      }
+    ],
+    "menus": {
+      "explorer/context": [
+        {
+          "command": "vscode-xray-viewer.generateCoverageReport",
+          "when": "vscode-xray-viewer.atlassianDomain && vscode-xray-viewer.atlassianApiKey && vscode-xray-viewer.atlassianProjectKey && vscode-xray-viewer.testFiles",
+          "group": "7_modification"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "vscode-xray-viewer",
+      "properties": {
+        "vscode-xray-viewer.atlassian": {
+          "type": "object",
+          "default": {
+            "domain": "",
+            "username": "",
+            "apiKey": "",
+            "project": "",
+            "query": "",
+            "shouldGroupByEpic": false
+          },
+          "description": "set up jira and xray sync for test cases",
+          "properties": {
+            "domain": {
+              "type": "string",
+              "description": "Specify domain for your atlassian project, e.g. https://your-domain.atlassian.net"
+            },
+            "username": {
+              "type": "string",
+              "description": "Specify username for your atlassian project"
+            },
+            "apiKey": {
+              "type": "string",
+              "description": "Specify api-key for your atlassian account"
+            },
+            "project": {
+              "type": "string",
+              "description": "Specify project key for your atlassian project, e.g ABC"
+            },
+            "query": {
+              "type": "string",
+              "description": "Customize query to fetch test cases from jira"
+            },
+            "shouldGroupByEpic": {
+              "type": "boolean",
+              "description": "Should group test cases by epic",
+              "default": false
+            },
+            "sanitizeTitles": {
+              "type": "array",
+              "description": "Sanitize test case titles with a list of regex patterns",
+              "default": [],
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "vscode-xray-viewer.testFiles": {
+          "type": "string",
+          "description": "Specify glob pattern for test files",
+          "default": "**/*.spec.{js,ts}"
+        },
+        "vscode-xray-viewer.xrayTestCaseAutocompletion": {
+          "type": "object",
+          "default": {
+            "enable": false,
+            "customMethod": ""
+          },
+          "description": "Enable autocomplete for test cases ids. By default checks annotations, but could be custom method, or plugin",
+          "items": {
+            "type": "object",
+            "properties": {
+              "enable": {
+                "type": "boolean",
+                "default": false
+              },
+              "customMethod": {
+                "type": "string",
+                "default": "",
+                "description": "if you provide annotations via custom method, please provide the name of the method here, e.g. 'coverTestCase'"
+              },
+              "provideIdOnly": {
+                "type": "boolean",
+                "default": false,
+                "description": "provide just test case id for autocompletion, by default full URL is provided"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run package",
+    "compile": "npm run check-types && npm run lint && node esbuild.js",
+    "watch": "npm-run-all -p watch:*",
+    "watch:esbuild": "node esbuild.js --watch",
+    "watch:tsc": "tsc --noEmit --watch --project tsconfig.json",
+    "package": "npm run check-types && npm run lint && node esbuild.js --production",
+    "compile-tests": "tsc -p . --outDir out",
+    "watch-tests": "tsc -p . -w --outDir out",
+    "pretest": "npm run compile-tests && npm run compile && npm run lint",
+    "check-types": "tsc --noEmit",
+    "lint": "eslint src",
+    "test": "vscode-test"
+  },
+  "devDependencies": {
+    "@types/mocha": "^10.0.10",
+    "@types/node": "20.x",
+    "@types/vscode": "^1.98.0",
+    "@typescript-eslint/eslint-plugin": "^8.28.0",
+    "@typescript-eslint/parser": "^8.28.0",
+    "@vscode/test-cli": "^0.0.10",
+    "@vscode/test-electron": "^2.4.1",
+    "esbuild": "^0.25.1",
+    "eslint": "^9.23.0",
+    "npm-run-all": "^4.1.5",
+    "typescript": "^5.8.2"
+  },
+  "dependencies": {
+    "fast-glob": "^3.3.3",
+    "got": "^14.4.6"
+  }
+}
