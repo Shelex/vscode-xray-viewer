@@ -10,7 +10,14 @@ export const saveCoverageReport = async () => {
     const covered = await getCoveredTestCases();
     const report = generateTestCoverageHtmlReport(testCases, covered);
 
-    const filePath = path.join(process.cwd(), "test-coverage-report.html");
+    const root = vscode.workspace.workspaceFolders?.at(0)?.uri.path;
+
+    if (!root) {
+        vscode.window.showErrorMessage("No workspace folder found to save the report.");
+        return;
+    }
+
+    const filePath = path.join(root, "test-coverage-report.html");
 
     try {
         await fs.writeFile(filePath, report, {
