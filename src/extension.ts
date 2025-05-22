@@ -1,6 +1,6 @@
 import * as vscode from "vscode";
 import { promptToReloadWindow } from "./utils";
-import { fetchTestCases } from "./commands/index";
+import { fetchTestCases, saveCoverageReport } from "./commands/index";
 import { JiraCompletionProvider } from "./providers/JiraCompletionProvider";
 import { provideXrayUrlHover } from "./providers/xrayUrlHover";
 import {
@@ -22,6 +22,10 @@ export function activate(context: vscode.ExtensionContext) {
         vscode.commands.registerCommand(
             "vscode-xray-viewer.fetchTestCases",
             fetchTestCases
+        ),
+        vscode.commands.registerCommand(
+            "vscode-xray-viewer.saveHtmlReport",
+            saveCoverageReport
         ),
         vscode.languages.registerCompletionItemProvider(
             JsAndTsActivationSchema,
